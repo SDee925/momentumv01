@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useMomentum } from '../context/MomentumContext';
 import InputSection from './InputSection';
 import Dashboard from './Dashboard';
+import MomentumUI from './MomentumUI';
 import APIKeyModal from './APIKeyModal';
 import { Settings } from 'lucide-react';
 
 const Layout = () => {
     const { apiKey, setApiKey, playbook, generate, isLoading, error } = useMomentum();
     const [isSettingsOpen, setIsSettingsOpen] = useState(!apiKey);
+    const useSupabaseFlow = true;
 
     return (
         <div className="min-h-screen bg-[#242424] text-white font-sans selection:bg-indigo-500/30">
@@ -31,10 +33,16 @@ const Layout = () => {
             />
 
             <main>
-                {playbook ? (
-                    <Dashboard />
+                {useSupabaseFlow ? (
+                    <MomentumUI />
                 ) : (
-                    <InputSection onGenerate={generate} isLoading={isLoading} />
+                    <>
+                        {playbook ? (
+                            <Dashboard />
+                        ) : (
+                            <InputSection onGenerate={generate} isLoading={isLoading} />
+                        )}
+                    </>
                 )}
             </main>
 
