@@ -110,7 +110,7 @@ const FocusMode = ({ task, onComplete, onExit }) => {
           {isCompleted && (
             <div className="text-2xl font-semibold text-green-400 mb-6 flex items-center gap-2">
               <CheckCircle2 size={28} />
-              <span>Time&apos;s up! Great work!</span>
+              <span>Time's up! Great work!</span>
             </div>
           )}
         </div>
@@ -148,7 +148,7 @@ const FocusMode = ({ task, onComplete, onExit }) => {
         {/* Motivational text */}
         <div className="text-center mt-12">
           <p className="text-zinc-500 text-sm">
-            Stay focused. You&apos;ve got this! 💪
+            Stay focused. You've got this! 💪
           </p>
         </div>
       </div>

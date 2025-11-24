@@ -11,6 +11,12 @@ const MomentumUI = () => {
   const [response, setResponse] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
 
+  // Helper to show temporary error messages
+  const showTemporaryError = (message, duration = 3000) => {
+    setError(message);
+    setTimeout(() => setError(null), duration);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -52,15 +58,13 @@ const MomentumUI = () => {
 
   const handleRedo = async () => {
     // Placeholder for redo functionality
-    setError('Redo functionality coming soon!');
-    setTimeout(() => setError(null), 3000);
+    showTemporaryError('Redo functionality coming soon!');
   };
 
   const handleDeepDive = async (task) => {
     // Placeholder for deep dive functionality
     console.log('Deep dive into task:', task.title);
-    setError('Deep dive functionality coming soon!');
-    setTimeout(() => setError(null), 3000);
+    showTemporaryError('Deep dive functionality coming soon!');
   };
 
   const handleReset = () => {
