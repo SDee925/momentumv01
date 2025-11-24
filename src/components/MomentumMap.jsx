@@ -9,7 +9,7 @@ const TABS = [
     { id: 'long', label: 'Systems', sub: '' },
 ];
 
-const MomentumMap = ({ actions, completedActions, onToggle, onReroll, isRerolling, onDeepDive, onToggleSubAction }) => {
+const MomentumMap = ({ actions, completedActions, onToggle, onReroll, isRerolling, onDeepDive, onToggleSubAction, onEnterTunnel, actionSyncStatus = {} }) => {
     const [activeTab, setActiveTab] = useState('immediate');
 
     const filteredActions = actions.filter(a => a.horizon === activeTab);
@@ -46,6 +46,8 @@ const MomentumMap = ({ actions, completedActions, onToggle, onReroll, isRerollin
                             isRerolling={isRerolling}
                             onDeepDive={onDeepDive}
                             onToggleSubAction={onToggleSubAction}
+                            onEnterTunnel={onEnterTunnel}
+                            syncStatus={actionSyncStatus[action.id] || 'idle'}
                         />
                     ))}
                 </AnimatePresence>

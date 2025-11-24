@@ -3,6 +3,7 @@ import { useMomentum } from '../context/MomentumContext';
 import InputSection from './InputSection';
 import Dashboard from './Dashboard';
 import APIKeyModal from './APIKeyModal';
+import Auth from './Auth';
 import { Settings } from 'lucide-react';
 
 const Layout = () => {
@@ -24,13 +25,17 @@ const Layout = () => {
                 <Settings size={20} />
             </button>
 
+            <div className="fixed top-4 right-16 z-40">
+                <Auth />
+            </div>
+
             <APIKeyModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 onSave={setApiKey}
             />
 
-            <main>
+            <main className="max-w-5xl mx-auto w-full px-4 py-10">
                 {playbook ? (
                     <Dashboard />
                 ) : (

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Check, RefreshCw, ArrowRight, Split } from 'lucide-react';
+import { Check, RefreshCw, ArrowRight, Split, Maximize2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
-const ActionCard = ({ action, isCompleted, onToggle, onReroll, isRerolling, onDeepDive, onToggleSubAction }) => {
+const ActionCard = ({ action, isCompleted, onToggle, onReroll, isRerolling, onDeepDive, onToggleSubAction, onEnterTunnel, syncStatus = 'idle' }) => {
     const hasSubActions = action.subActions && action.subActions.length > 0;
 
     return (
@@ -19,11 +19,29 @@ const ActionCard = ({ action, isCompleted, onToggle, onReroll, isRerolling, onDe
                     : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
             )}
         >
+            {/* per-action sync indicator */}
+            <div className="absolute top-3 right-3">
+                {syncStatus === 'saving' && (
+                    <div className="flex items-center gap-1 text-sm text-zinc-400">
+                        <RefreshCw size={14} className="animate-spin" />
+                    </div>
+                )}
+                {syncStatus === 'synced' && (
+                    <div className="flex items-center gap-1 text-sm text-emerald-400">
+                        <Check size={14} />
+                    </div>
+                )}
+                {syncStatus === 'error' && (
+                    <div className="flex items-center gap-1 text-sm text-red-400">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </div>
+                )}
+            </div>
             <div className="flex items-start gap-4">
                 <button
                     onClick={() => onToggle(action.id)}
                     className={clsx(
-                        "mt-1 flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "mt-1 shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors",
                         isCompleted
                             ? "bg-emerald-500 border-emerald-500 text-white"
                             : "border-zinc-600 hover:border-zinc-400"
@@ -59,7 +77,7 @@ const ActionCard = ({ action, isCompleted, onToggle, onReroll, isRerolling, onDe
                                     <button
                                         onClick={() => onToggleSubAction(action.id, sub.id)}
                                         className={clsx(
-                                            "w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0",
+                                            "w-5 h-5 rounded border flex items-center justify-center transition-colors shrink-0",
                                             sub.isCompleted
                                                 ? "bg-emerald-500 border-emerald-500 text-white"
                                                 : "border-zinc-600 hover:border-zinc-400"
@@ -81,6 +99,15 @@ const ActionCard = ({ action, isCompleted, onToggle, onReroll, isRerolling, onDe
 
                 {!isCompleted && (
                     <div className="flex flex-col gap-2 ml-2">
+                        <button
+                            onClick={() => onEnterTunnel(action.id)}
+                            disabled={isRerolling}
+                            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-emerald-900/30 text-zinc-400 hover:text-emerald-400 rounded-lg transition-all border border-transparent hover:border-emerald-500/30 w-full justify-center whitespace-nowrap"
+                            title="Enter The Tunnel: Focus Mode"
+                        >
+                            <Maximize2 size={18} />
+                            <span className="text-sm font-medium">Focus</span>
+                        </button>
                         <button
                             onClick={() => onDeepDive(action.id, action.title)}
                             disabled={isRerolling}

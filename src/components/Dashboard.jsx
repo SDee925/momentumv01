@@ -5,6 +5,7 @@ import MomentumMap from './MomentumMap';
 import ProgressBar from './ProgressBar';
 import JournalSection from './JournalSection';
 import HistoryView from './HistoryView';
+import FocusMode from './FocusMode';
 import { ArrowLeft, Share2, History, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 const Dashboard = () => {
@@ -17,9 +18,18 @@ const Dashboard = () => {
         isLoading,
         updateJournalEntry,
         archivePlaybook,
+        saveCurrentPlaybook,
+        lastPlaybookSync,
+        saveJournalEntry,
+        lastJournalSync,
         history,
         handleDeepDive,
-        toggleSubAction
+        toggleSubAction,
+        activeTask,
+        exitTunnel,
+        lastHistorySync,
+        enterTunnel
+        , actionSyncStatus
     } = useMomentum();
 
     const [view, setView] = useState(() => localStorage.getItem('momentum_dashboard_view') || 'active');
@@ -31,8 +41,36 @@ const Dashboard = () => {
 
     if (!playbook && view !== 'history') return null;
 
+    if (activeTask) {
+        return (
+            <FocusMode
+                task={activeTask}
+                onComplete={() => exitTunnel(true)}
+                onExit={() => exitTunnel(false)}
+                onToggleSubAction={toggleSubAction}
+                lastHistorySync={lastHistorySync}
+            />
+        );
+    }
+
     const totalActions = playbook ? playbook.actions.length : 0;
     const completedCount = completedActions.length;
+
+    const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+
+    const handleSave = async () => {
+        if (!playbook) return;
+        setSaveStatus('saving');
+        try {
+            await saveCurrentPlaybook();
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2500);
+        } catch (err) {
+            console.warn('Save failed', err);
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 4000);
+        }
+    };
 
     return (
         <motion.div
@@ -69,15 +107,43 @@ const Dashboard = () => {
                 </div>
             </header>
 
+            <div className="flex justify-end mb-4 items-center gap-3">
+                <button
+                    onClick={handleSave}
+                    className="mr-3 px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md text-sm"
+                    disabled={!playbook || saveStatus === 'saving'}
+                >
+                    {saveStatus === 'saving' ? 'Saving...' : 'Save'}
+                </button>
+
+                {saveStatus === 'saved' && (
+                    <div className="text-sm text-emerald-400">Saved ✓</div>
+                )}
+
+                {saveStatus === 'error' && (
+                    <div className="text-sm text-red-400">Save failed</div>
+                )}
+            </div>
+
             {view === 'history' ? (
                 <HistoryView history={history} />
             ) : (
                 <>
-                    <div className="mb-12">
+                    <div className="mb-12 flex items-baseline gap-3">
                         <h1 className="text-4xl font-bold text-white mb-2 capitalize">
                             {playbook.focusArea}
                         </h1>
-                        <p className="text-zinc-500">Momentum Protocol v1.0</p>
+                        <div className="text-sm text-zinc-500">Momentum Protocol v1.0</div>
+                        <div className="ml-auto text-sm text-zinc-400 flex items-center gap-2">
+                            {lastPlaybookSync ? (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><path d="M12 15V3"/></svg>
+                                    <span>Saved {new Date(lastPlaybookSync).toLocaleString()}</span>
+                                </>
+                            ) : (
+                                <span className="text-zinc-600">Not saved</span>
+                            )}
+                        </div>
                     </div>
 
                     <AnalysisPanel
@@ -97,12 +163,16 @@ const Dashboard = () => {
                         isRerolling={isLoading}
                         onDeepDive={handleDeepDive}
                         onToggleSubAction={toggleSubAction}
+                        onEnterTunnel={enterTunnel}
+                        actionSyncStatus={actionSyncStatus}
                     />
 
                     <div className="mt-12 border-t border-zinc-800 pt-12">
                         <JournalSection
-                            entry={playbook.journalEntry || ""}
-                            onChange={updateJournalEntry}
+                                entry={playbook.journalEntry || ""}
+                                onChange={updateJournalEntry}
+                                onSave={async (entry) => await saveJournalEntry(entry)}
+                                lastSynced={lastJournalSync}
                         />
 
                         <div className="flex justify-end">
