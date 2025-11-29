@@ -1,5 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { generatePlaybook, rerollTask, breakDownTask } from '../services/openrouter';
+import {
+    callMomentumAI,
+    createPlaybook,
+    saveActions,
+    getCurrentPlaybook,
+    getArchivedPlaybooks,
+    updateAction,
+    replaceAction,
+    saveSubActions,
+    updateSubAction,
+    updatePlaybookJournal,
+    archivePlaybook as archivePlaybookDb
+} from '../services/supabaseService';
 
 const MomentumContext = createContext();
 
@@ -12,62 +24,96 @@ export const useMomentum = () => {
 };
 
 export const MomentumProvider = ({ children }) => {
-    const [apiKey, setApiKey] = useState(() => localStorage.getItem('momentum_api_key') || '');
-
-    // Persist playbook and completedActions
-    const [playbook, setPlaybook] = useState(() => {
-        const saved = localStorage.getItem('momentum_playbook');
-        return saved ? JSON.parse(saved) : null;
-    });
-
-    const [completedActions, setCompletedActions] = useState(() => {
-        const saved = localStorage.getItem('momentum_completed_actions');
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    // History persistence
-    const [history, setHistory] = useState(() => {
-        const saved = localStorage.getItem('momentum_history');
-        return saved ? JSON.parse(saved) : [];
-    });
-
+    const [playbook, setPlaybook] = useState(null);
+    const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Persistence Effects
     useEffect(() => {
-        if (apiKey) localStorage.setItem('momentum_api_key', apiKey);
-    }, [apiKey]);
+        loadCurrentPlaybook();
+        loadHistory();
+    }, []);
 
-    useEffect(() => {
-        if (playbook) {
-            localStorage.setItem('momentum_playbook', JSON.stringify(playbook));
-        } else {
-            localStorage.removeItem('momentum_playbook');
+    const loadCurrentPlaybook = async () => {
+        try {
+            const current = await getCurrentPlaybook();
+            if (current) {
+                const transformed = transformPlaybookFromDb(current);
+                setPlaybook(transformed);
+            }
+        } catch (err) {
+            console.error('Failed to load current playbook:', err);
         }
-    }, [playbook]);
+    };
 
-    useEffect(() => {
-        localStorage.setItem('momentum_completed_actions', JSON.stringify(completedActions));
-    }, [completedActions]);
+    const loadHistory = async () => {
+        try {
+            const archived = await getArchivedPlaybooks();
+            const transformed = archived.map(transformPlaybookFromDb);
+            setHistory(transformed);
+        } catch (err) {
+            console.error('Failed to load history:', err);
+        }
+    };
 
-    useEffect(() => {
-        localStorage.setItem('momentum_history', JSON.stringify(history));
-    }, [history]);
+    const transformPlaybookFromDb = (dbPlaybook) => {
+        return {
+            id: dbPlaybook.id,
+            focusArea: dbPlaybook.focus_area,
+            analysis: dbPlaybook.analysis,
+            opportunities: dbPlaybook.opportunities,
+            pitfalls: dbPlaybook.pitfalls,
+            journalEntry: dbPlaybook.journal_entry || '',
+            createdAt: dbPlaybook.created_at,
+            archivedAt: dbPlaybook.archived_at,
+            actions: dbPlaybook.actions?.map(action => ({
+                id: action.id,
+                title: action.title,
+                description: action.description,
+                horizon: action.horizon,
+                rationale: action.rationale,
+                isCompleted: action.is_completed,
+                subActions: action.subActions?.map(sub => ({
+                    id: sub.id,
+                    title: sub.title,
+                    isCompleted: sub.is_completed
+                }))
+            })) || []
+        };
+    };
 
     const generate = async (focusArea) => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await generatePlaybook(apiKey, focusArea);
-            // Add timestamp and empty journal to the new playbook
+            const data = await callMomentumAI('generate', { focusArea });
+
+            const playbookRecord = await createPlaybook({
+                focusArea: data.focusArea,
+                analysis: data.analysis,
+                opportunities: data.opportunities,
+                pitfalls: data.pitfalls,
+                journalEntry: ''
+            });
+
+            await saveActions(playbookRecord.id, data.actions);
+
             const newPlaybook = {
-                ...data,
-                createdAt: new Date().toISOString(),
-                journalEntry: ""
+                id: playbookRecord.id,
+                focusArea: data.focusArea,
+                analysis: data.analysis,
+                opportunities: data.opportunities,
+                pitfalls: data.pitfalls,
+                journalEntry: '',
+                createdAt: playbookRecord.created_at,
+                actions: data.actions.map(action => ({
+                    ...action,
+                    isCompleted: false,
+                    subActions: []
+                }))
             };
+
             setPlaybook(newPlaybook);
-            setCompletedActions([]);
         } catch (err) {
             setError(err.message || "Failed to generate playbook");
         } finally {
@@ -83,9 +129,20 @@ export const MomentumProvider = ({ children }) => {
 
         setIsLoading(true);
         try {
-            const newAction = await rerollTask(apiKey, playbook.focusArea, currentTitle);
+            const newAction = await callMomentumAI('reroll', {
+                focusArea: playbook.focusArea,
+                rejectedTaskTitle: currentTitle
+            });
+
+            await replaceAction(actionId, newAction, actionIndex);
+
             const newActions = [...playbook.actions];
-            newActions[actionIndex] = { ...newAction, id: actionId };
+            newActions[actionIndex] = {
+                ...newAction,
+                id: actionId,
+                isCompleted: false,
+                subActions: []
+            };
 
             setPlaybook({
                 ...playbook,
@@ -93,6 +150,7 @@ export const MomentumProvider = ({ children }) => {
             });
         } catch (err) {
             console.error("Reroll failed", err);
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -101,15 +159,20 @@ export const MomentumProvider = ({ children }) => {
     const handleDeepDive = async (actionId, actionTitle) => {
         if (!playbook) return;
 
-        // Set loading state for specific action? 
-        // For simplicity, let's use global loading or we need a way to track which action is loading.
-        // Let's use a new state for "actionLoading" if we want to be precise, 
-        // but for now global isLoading is okay, or we can pass a callback.
-        // Actually, let's just use isLoading for now.
         setIsLoading(true);
 
         try {
-            const subActions = await breakDownTask(apiKey, playbook.focusArea, actionTitle);
+            const subActions = await callMomentumAI('breakdown', {
+                focusArea: playbook.focusArea,
+                parentTask: actionTitle
+            });
+
+            const subActionsWithCompletion = subActions.map(s => ({
+                ...s,
+                isCompleted: false
+            }));
+
+            await saveSubActions(actionId, subActionsWithCompletion);
 
             const actionIndex = playbook.actions.findIndex(a => a.id === actionId);
             if (actionIndex === -1) return;
@@ -117,7 +180,7 @@ export const MomentumProvider = ({ children }) => {
             const newActions = [...playbook.actions];
             newActions[actionIndex] = {
                 ...newActions[actionIndex],
-                subActions: subActions.map(s => ({ ...s, isCompleted: false }))
+                subActions: subActionsWithCompletion
             };
 
             setPlaybook({
@@ -126,22 +189,41 @@ export const MomentumProvider = ({ children }) => {
             });
         } catch (err) {
             console.error("Deep dive failed", err);
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const toggleAction = (actionId) => {
-        setCompletedActions(prev => {
-            if (prev.includes(actionId)) {
-                return prev.filter(id => id !== actionId);
-            } else {
-                return [...prev, actionId];
-            }
-        });
+    const toggleAction = async (actionId) => {
+        if (!playbook) return;
+
+        const actionIndex = playbook.actions.findIndex(a => a.id === actionId);
+        if (actionIndex === -1) return;
+
+        const action = playbook.actions[actionIndex];
+        const newCompletedState = !action.isCompleted;
+
+        try {
+            await updateAction(actionId, { is_completed: newCompletedState });
+
+            const newActions = [...playbook.actions];
+            newActions[actionIndex] = {
+                ...action,
+                isCompleted: newCompletedState
+            };
+
+            setPlaybook({
+                ...playbook,
+                actions: newActions
+            });
+        } catch (err) {
+            console.error("Toggle action failed", err);
+            setError(err.message);
+        }
     };
 
-    const toggleSubAction = (actionId, subActionId) => {
+    const toggleSubAction = async (actionId, subActionId) => {
         if (!playbook) return;
 
         const actionIndex = playbook.actions.findIndex(a => a.id === actionId);
@@ -153,48 +235,65 @@ export const MomentumProvider = ({ children }) => {
         const subActionIndex = action.subActions.findIndex(s => s.id === subActionId);
         if (subActionIndex === -1) return;
 
-        const newSubActions = [...action.subActions];
-        newSubActions[subActionIndex] = {
-            ...newSubActions[subActionIndex],
-            isCompleted: !newSubActions[subActionIndex].isCompleted
-        };
+        const subAction = action.subActions[subActionIndex];
+        const newCompletedState = !subAction.isCompleted;
 
-        const newActions = [...playbook.actions];
-        newActions[actionIndex] = { ...action, subActions: newSubActions };
+        try {
+            await updateSubAction(subActionId, { is_completed: newCompletedState });
 
-        setPlaybook({ ...playbook, actions: newActions });
+            const newSubActions = [...action.subActions];
+            newSubActions[subActionIndex] = {
+                ...subAction,
+                isCompleted: newCompletedState
+            };
+
+            const newActions = [...playbook.actions];
+            newActions[actionIndex] = { ...action, subActions: newSubActions };
+
+            setPlaybook({ ...playbook, actions: newActions });
+        } catch (err) {
+            console.error("Toggle sub-action failed", err);
+            setError(err.message);
+        }
     };
 
-    const updateJournalEntry = (entry) => {
+    const updateJournalEntry = async (entry) => {
         if (!playbook) return;
-        setPlaybook(prev => ({ ...prev, journalEntry: entry }));
+
+        try {
+            await updatePlaybookJournal(playbook.id, entry);
+            setPlaybook(prev => ({ ...prev, journalEntry: entry }));
+        } catch (err) {
+            console.error("Update journal failed", err);
+            setError(err.message);
+        }
     };
 
-    const archivePlaybook = () => {
+    const archivePlaybook = async () => {
         if (!playbook) return;
 
-        const archivedSession = {
-            ...playbook,
-            completedActions,
-            archivedAt: new Date().toISOString()
-        };
+        try {
+            await archivePlaybookDb(playbook.id);
 
-        setHistory(prev => [archivedSession, ...prev]);
-        setPlaybook(null);
-        setCompletedActions([]);
+            const archivedPlaybook = {
+                ...playbook,
+                archivedAt: new Date().toISOString()
+            };
+
+            setHistory(prev => [archivedPlaybook, ...prev]);
+            setPlaybook(null);
+        } catch (err) {
+            console.error("Archive playbook failed", err);
+            setError(err.message);
+        }
     };
 
     const reset = () => {
-        // Optional: Confirm before losing unsaved progress if not archiving?
-        // For now, reset just clears current state.
         setPlaybook(null);
-        setCompletedActions([]);
         setError(null);
     };
 
     const value = {
-        apiKey,
-        setApiKey,
         playbook,
         history,
         isLoading,
@@ -202,7 +301,6 @@ export const MomentumProvider = ({ children }) => {
         generate,
         handleReroll,
         handleDeepDive,
-        completedActions,
         toggleAction,
         toggleSubAction,
         updateJournalEntry,

@@ -31,7 +31,7 @@ const HistoryView = ({ history }) => {
                     month: 'long',
                     day: 'numeric'
                 });
-                const completedCount = session.completedActions ? session.completedActions.length : 0;
+                const completedCount = session.actions ? session.actions.filter(a => a.isCompleted).length : 0;
                 const totalCount = session.actions ? session.actions.length : 0;
 
                 return (
