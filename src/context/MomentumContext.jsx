@@ -29,6 +29,13 @@ export const MomentumProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const [onboarding, setOnboarding] = useState({
+        stuckInput: '',
+        frictionInput: '',
+        blockPattern: '',
+        momentumSequence: {}
+    });
+
     useEffect(() => {
         loadCurrentPlaybook();
         loadHistory();
@@ -293,6 +300,35 @@ export const MomentumProvider = ({ children }) => {
         setError(null);
     };
 
+    const setStuckInput = (input) => {
+        setOnboarding(prev => ({ ...prev, stuckInput: input }));
+    };
+
+    const setFrictionInput = (input) => {
+        setOnboarding(prev => ({ ...prev, frictionInput: input }));
+    };
+
+    const classifyBlockPattern = async (stuckInput, frictionInput) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await callMomentumAI('classifyBlockPattern', {
+                stuckInput,
+                frictionInput,
+            });
+            setOnboarding(prev => ({
+                ...prev,
+                blockPattern: result.blockPattern
+            }));
+            return result;
+        } catch (err) {
+            setError(err.message || 'Failed to classify block pattern');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const value = {
         playbook,
         history,
@@ -305,7 +341,11 @@ export const MomentumProvider = ({ children }) => {
         toggleSubAction,
         updateJournalEntry,
         archivePlaybook,
-        reset
+        reset,
+        onboarding,
+        setStuckInput,
+        setFrictionInput,
+        classifyBlockPattern
     };
 
     return (

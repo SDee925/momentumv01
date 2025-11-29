@@ -1,18 +1,37 @@
+import { useState } from 'react';
 import { useMomentum } from '../context/MomentumContext';
 import { useAuth } from '../context/AuthContext';
 import InputSection from './InputSection';
+import FrictionSelector from './FrictionSelector';
 import Dashboard from './Dashboard';
 import { LogOut } from 'lucide-react';
 
 const Layout = () => {
-    const { playbook, generate, isLoading, error } = useMomentum();
+    const { playbook, generate, isLoading, error, onboarding, setStuckInput, setFrictionInput, classifyBlockPattern } = useMomentum();
     const { signOut, user } = useAuth();
+    const [showFrictionScreen, setShowFrictionScreen] = useState(false);
 
     const handleSignOut = async () => {
         try {
             await signOut();
         } catch (err) {
             console.error('Sign out error:', err);
+        }
+    };
+
+    const handleNavigateToFriction = (input) => {
+        setStuckInput(input);
+        setShowFrictionScreen(true);
+    };
+
+    const handleFrictionContinue = async (frictionInput) => {
+        setFrictionInput(frictionInput);
+        try {
+            await classifyBlockPattern(onboarding.stuckInput, frictionInput);
+            await generate(onboarding.stuckInput);
+            setShowFrictionScreen(false);
+        } catch (err) {
+            console.error('Failed to process friction input:', err);
         }
     };
 
@@ -32,8 +51,18 @@ const Layout = () => {
             <main>
                 {playbook ? (
                     <Dashboard />
+                ) : showFrictionScreen ? (
+                    <FrictionSelector
+                        stuckInput={onboarding.stuckInput}
+                        onContinue={handleFrictionContinue}
+                        isLoading={isLoading}
+                    />
                 ) : (
-                    <InputSection onGenerate={generate} isLoading={isLoading} />
+                    <InputSection
+                        onGenerate={generate}
+                        onNavigateToFriction={handleNavigateToFriction}
+                        isLoading={isLoading}
+                    />
                 )}
             </main>
 
