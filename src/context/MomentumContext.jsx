@@ -329,6 +329,8 @@ export const MomentumProvider = ({ children }) => {
         }
     };
 
+    const completedActions = playbook?.actions?.filter(a => a.isCompleted) || [];
+
     const value = {
         playbook,
         history,
@@ -342,6 +344,7 @@ export const MomentumProvider = ({ children }) => {
         updateJournalEntry,
         archivePlaybook,
         reset,
+        completedActions,
         onboarding,
         setStuckInput,
         setFrictionInput,
