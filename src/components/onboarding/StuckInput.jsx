@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export const StuckInput = () => {
   const { stuckInput, setStuckInput, nextStep } = useOnboarding();
@@ -12,41 +13,45 @@ export const StuckInput = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
+    <div className="min-h-screen bg-[#242424] flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl"
+        transition={{ duration: 0.6 }}
+        className="max-w-2xl w-full text-center"
       >
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 md:p-12 shadow-2xl">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold text-white">
-                Let's get you moving again.
-              </h1>
-              <p className="text-lg text-slate-400">
-                What are you trying to make progress on?
-              </p>
-            </div>
+        <div className="mb-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          Step 1 of 2
+        </div>
 
-            <div className="space-y-4">
-              <textarea
-                value={localInput}
-                onChange={(e) => setLocalInput(e.target.value)}
-                placeholder="Type your answer here..."
-                rows={4}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-              />
+        <div className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400">
+          <Sparkles size={12} className="text-yellow-500" />
+          <span>The Momentum Engine v1.0</span>
+        </div>
 
-              <button
-                onClick={handleContinue}
-                disabled={!localInput.trim()}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-500/20 disabled:shadow-none"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
+          Momentum Starts Here.
+        </h1>
+
+        <p className="text-xl text-zinc-400 mb-12 max-w-lg mx-auto">
+          Tell me the goal, project, or area where you're stuck. I'll map the Block Pattern and build your first 3-step protocol.
+        </p>
+
+        <div className="relative max-w-lg mx-auto">
+          <input
+            type="text"
+            value={localInput}
+            onChange={(e) => setLocalInput(e.target.value)}
+            placeholder="e.g., Write a chapter, start fitness, email outreach…"
+            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-6 py-5 text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all"
+          />
+          <button
+            onClick={handleContinue}
+            disabled={!localInput.trim()}
+            className="absolute right-2 top-2 bottom-2 aspect-square bg-white text-black rounded-xl flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ArrowRight size={24} />
+          </button>
         </div>
       </motion.div>
     </div>

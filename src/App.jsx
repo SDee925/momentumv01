@@ -1,10 +1,25 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { MomentumProvider } from './context/MomentumContext';
+import { MomentumProvider, useMomentum } from './context/MomentumContext';
 import { AuthForm } from './components/AuthForm';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import Layout from './components/Layout';
 import { supabase } from './lib/supabase';
+
+function OnboardingWrapper({ onComplete }) {
+  const { generate } = useMomentum();
+
+  const handleGeneratePlaybook = async (focusArea) => {
+    await generate(focusArea);
+  };
+
+  return (
+    <OnboardingFlow
+      onComplete={onComplete}
+      onGeneratePlaybook={handleGeneratePlaybook}
+    />
+  );
+}
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -53,13 +68,13 @@ function AppContent() {
     return <AuthForm />;
   }
 
-  if (showOnboarding) {
-    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
-  }
-
   return (
     <MomentumProvider>
-      <Layout />
+      {showOnboarding ? (
+        <OnboardingWrapper onComplete={handleOnboardingComplete} />
+      ) : (
+        <Layout />
+      )}
     </MomentumProvider>
   );
 }

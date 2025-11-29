@@ -6,7 +6,7 @@ import { MomentumSequenceDisplay } from './MomentumSequenceDisplay';
 import { Preferences } from './Preferences';
 import { Complete } from './Complete';
 
-const OnboardingFlowContent = ({ onComplete }) => {
+const OnboardingFlowContent = ({ onComplete, onGeneratePlaybook }) => {
   const { step } = useOnboarding();
 
   switch (step) {
@@ -21,16 +21,16 @@ const OnboardingFlowContent = ({ onComplete }) => {
     case 5:
       return <Preferences />;
     case 6:
-      return <Complete onComplete={onComplete} />;
+      return <Complete onComplete={onComplete} onGeneratePlaybook={onGeneratePlaybook} />;
     default:
       return <StuckInput />;
   }
 };
 
-export const OnboardingFlow = ({ onComplete }) => {
+export const OnboardingFlow = ({ onComplete, onGeneratePlaybook }) => {
   return (
     <OnboardingProvider>
-      <OnboardingFlowContent onComplete={onComplete} />
+      <OnboardingFlowContent onComplete={onComplete} onGeneratePlaybook={onGeneratePlaybook} />
     </OnboardingProvider>
   );
 };

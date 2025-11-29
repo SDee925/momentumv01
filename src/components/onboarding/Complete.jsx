@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { CheckCircle } from 'lucide-react';
 
-export const Complete = ({ onComplete }) => {
-  const { completeOnboarding, isLoading, error } = useOnboarding();
+export const Complete = ({ onComplete, onGeneratePlaybook }) => {
+  const { completeOnboarding, isLoading, error, stuckInput } = useOnboarding();
   const [saveAttempted, setSaveAttempted] = useState(false);
 
   useEffect(() => {
@@ -13,15 +13,18 @@ export const Complete = ({ onComplete }) => {
         setSaveAttempted(true);
         const success = await completeOnboarding();
         if (success) {
+          if (onGeneratePlaybook && stuckInput) {
+            await onGeneratePlaybook(stuckInput);
+          }
           setTimeout(() => {
             onComplete();
-          }, 2000);
+          }, 1500);
         }
       }
     };
 
     saveAndComplete();
-  }, [saveAttempted, completeOnboarding, onComplete]);
+  }, [saveAttempted, completeOnboarding, onComplete, onGeneratePlaybook, stuckInput]);
 
   if (error) {
     return (

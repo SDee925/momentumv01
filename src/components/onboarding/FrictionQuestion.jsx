@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 const FRICTION_OPTIONS = [
   'Getting started',
@@ -27,68 +28,80 @@ export const FrictionQuestion = () => {
   const isDisabled = !selected || (showCustom && !customInput.trim());
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
+    <div className="min-h-screen bg-[#242424] flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl"
+        transition={{ duration: 0.6 }}
+        className="max-w-2xl w-full text-center"
       >
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 md:p-12 shadow-2xl">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold text-white">
-                What part of that feels heavy or unclear?
-              </h1>
-            </div>
+        <div className="mb-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          Step 2 of 2
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {FRICTION_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSelected(option)}
-                  className={`px-6 py-4 rounded-lg font-medium transition-all border ${
-                    selected === option
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                      : 'bg-slate-900/50 border-slate-600 text-slate-300 hover:border-slate-500 hover:bg-slate-900/70'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+        <div className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400">
+          <Sparkles size={12} className="text-yellow-500" />
+          <span>The Momentum Engine v1.0</span>
+        </div>
 
-            {showCustom && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="space-y-2"
-              >
-                <textarea
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder="Describe what's holding you back..."
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                />
-              </motion.div>
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
+          What part of this feels heavy or unclear?
+        </h1>
+
+        <p className="text-lg text-zinc-400 mb-8 max-w-lg mx-auto">
+          Choose the option that best matches why you haven't started.
+        </p>
+
+        <div className="max-w-lg mx-auto space-y-3 mb-8">
+          {FRICTION_OPTIONS.map((option) => (
+            <button
+              key={option}
+              onClick={() => setSelected(option)}
+              className={`w-full px-6 py-4 rounded-xl font-medium transition-all border text-left ${
+                selected === option
+                  ? 'bg-white text-black border-white'
+                  : 'bg-zinc-900/50 text-white border-zinc-800 hover:border-zinc-700'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {showCustom && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="max-w-lg mx-auto mb-8"
+          >
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Describe what's holding you back..."
+              rows={3}
+              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-6 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all resize-none"
+            />
+          </motion.div>
+        )}
+
+        <div className="max-w-lg mx-auto">
+          <button
+            onClick={handleContinue}
+            disabled={isDisabled || isLoading}
+            className="w-full bg-white text-black font-semibold py-5 px-6 rounded-xl hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                <span>Analyzing pattern...</span>
+              </>
+            ) : (
+              <>
+                <span>Continue</span>
+                <ArrowRight size={20} />
+              </>
             )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={prevStep}
-                className="px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleContinue}
-                disabled={isDisabled || isLoading}
-                className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-500/20 disabled:shadow-none"
-              >
-                {isLoading ? 'Analyzing...' : 'Continue'}
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
       </motion.div>
     </div>

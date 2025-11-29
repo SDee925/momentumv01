@@ -2,17 +2,13 @@ import React, { useState } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const InputSection = ({ onGenerate, isLoading, onNavigateToFriction }) => {
+const InputSection = ({ onGenerate, isLoading }) => {
     const [input, setInput] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (input.trim()) {
-            if (onNavigateToFriction) {
-                onNavigateToFriction(input);
-            } else {
-                onGenerate(input);
-            }
+            onGenerate(input);
         }
     };
 
@@ -24,21 +20,17 @@ const InputSection = ({ onGenerate, isLoading, onNavigateToFriction }) => {
                 transition={{ duration: 0.6 }}
                 className="max-w-2xl w-full"
             >
-                <div className="mb-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                    Step 1 of 2
-                </div>
-
                 <div className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400">
                     <Sparkles size={12} className="text-yellow-500" />
                     <span>The Momentum Engine v1.0</span>
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
-                    Momentum Starts Here.
+                    Break Inertia.
                 </h1>
 
                 <p className="text-xl text-zinc-400 mb-12 max-w-lg mx-auto">
-                    Tell me the goal, project, or area where you're stuck. I'll map the Block Pattern and build your first 3-step protocol.
+                    Enter a goal, project, or area where you feel stuck. We'll build a protocol to get you moving.
                 </p>
 
                 <form onSubmit={handleSubmit} className="relative max-w-lg mx-auto">
@@ -46,7 +38,7 @@ const InputSection = ({ onGenerate, isLoading, onNavigateToFriction }) => {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="e.g., Write a chapter, start fitness, email outreach…"
+                        placeholder="e.g., Writing, Fitness, Career..."
                         className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-6 py-5 text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all"
                         disabled={isLoading}
                     />
