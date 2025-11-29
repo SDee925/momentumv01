@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { action, focusArea, rejectedTaskTitle, parentTask } = await req.json();
+    const { action, focusArea, rejectedTaskTitle, parentTask, stuckInput, frictionInput } = await req.json();
 
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
@@ -81,6 +81,78 @@ Deno.serve(async (req: Request) => {
     let result;
 
     switch (action) {
+      case "classifyBlockPattern": {
+        const prompt = `
+          Analyze the user's stuck point and friction to identify their block pattern.
+
+          Stuck Point: "${stuckInput}"
+          Friction: "${frictionInput}"
+
+          Identify ONE of these block patterns:
+          - Clarity Block: User doesn't know what to do next or feels confused
+          - Overwhelm Block: Too many steps, feeling buried or scattered
+          - Fear Block: Anxiety about outcome, failure, or judgment
+          - Perfection Block: Waiting for perfect conditions or overthinking details
+          - Energy Block: Low motivation, tired, or depleted
+          - Avoidance Block: Resistance without clear reason, procrastinating
+          - Overthinking Block: Analysis paralysis, trapped in planning
+          - Decision Block: Stuck choosing between options
+
+          Output strict JSON:
+          {
+            "blockPattern": "Clarity Block",
+            "reasoning": "Brief explanation of why this pattern fits"
+          }
+        `;
+        const completion = await openai.chat.completions.create({
+          model: "google/gemma-3n-e4b-it",
+          messages: [
+            { role: "system", content: "You are a behavioral pattern analyst that outputs JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_object" },
+        });
+        result = JSON.parse(completion.choices[0].message.content);
+        break;
+      }
+
+      case "generateMomentumSequence": {
+        const prompt = `
+          Generate a 3-step momentum sequence to break through the user's block.
+
+          Stuck Point: "${stuckInput}"
+          Block Pattern: "${frictionInput}"
+
+          Create 3 steps:
+          1. Activation Move (90 seconds) - Immediate physical action to break inertia
+          2. Momentum Move - Build on the activation with next concrete step
+          3. Systems Move - Set up structure to maintain momentum
+
+          Rules:
+          - Be specific and directive (no "you might want to")
+          - No generic advice (no "meditate", "journal feelings", "take deep breath")
+          - Focus on mechanical, physical actions
+          - Each step must be actionable immediately
+
+          Output strict JSON:
+          {
+            "activationMove": "Specific 90-second action",
+            "momentumMove": "Next concrete step",
+            "systemsMove": "Structure to maintain progress"
+          }
+        `;
+        const completion = await openai.chat.completions.create({
+          model: "google/gemma-3n-e4b-it",
+          messages: [
+            { role: "system", content: "You are The Momentum Architect. Output strict JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_object" },
+        });
+        result = JSON.parse(completion.choices[0].message.content);
+        break;
+      }
+
       case "generate": {
         const completion = await openai.chat.completions.create({
           model: "google/gemma-3n-e4b-it",
