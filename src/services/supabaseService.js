@@ -21,9 +21,12 @@ export const callMomentumAI = async (action, payload) => {
 };
 
 export const createPlaybook = async (playbookData) => {
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from('playbooks')
     .insert({
+      user_id: user?.id,
       focus_area: playbookData.focusArea,
       analysis: playbookData.analysis,
       opportunities: playbookData.opportunities,
